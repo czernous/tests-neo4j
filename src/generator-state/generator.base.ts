@@ -2,7 +2,6 @@ import { Dispatch, createContext, useCallback, useMemo, useReducer } from 'react
 
 interface IGeneratorState {
   password: string | null;
-  seed: string;
   charLength: number;
   includeUppercase: boolean;
   includeLowercase: boolean;
@@ -26,7 +25,6 @@ enum GeneratorActions {
 
 const initialState = {
   password: null,
-  seed: '0123456789',
   charLength: 0,
   includeUppercase: false,
   includeLowercase: false,
@@ -58,19 +56,16 @@ const reducer = (state: IGeneratorState, action: IGeneratorAction) => {
       return {
         ...state,
         includeLowercase: !state.includeLowercase,
-        seed: action.payload.seed,
       };
     case GeneratorActions.TOGGLE_UPPERCASE:
       return {
         ...state,
         includeUppercase: !state.includeUppercase,
-        seed: action.payload.seed,
       };
     case GeneratorActions.TOGGLE_SYMBOLS:
       return {
         ...state,
         includeSymbols: !state.includeSymbols,
-        seed: action.payload.seed,
       };
   }
 };
@@ -83,8 +78,12 @@ export const useGeneratorReducer = () => {
   const letters = 'abcdefghijklmnopqrstuvwxyz';
 
   const generatePassword = useCallback(() => {
+    const seed = `${digits}${generator.includeLowercase ? letters.toLowerCase() : ''}${
+      generator.includeUppercase ? letters.toUpperCase() : ''
+    }${generator.includeSymbols ? symbols : ''}`;
+
     const password = Array.from(crypto.getRandomValues(new Uint32Array(generator.charLength)))
-      .map((x) => generator.seed[x % generator.seed.length])
+      .map((x) => seed[x % seed.length])
       .join('');
 
     dispatch({
@@ -114,36 +113,21 @@ export const useGeneratorReducer = () => {
   const toggleLowercase = useCallback(() => {
     dispatch({
       type: GeneratorActions.TOGGLE_LOWERCASE,
-      payload: {
-        ...generator,
-        seed: `${digits}${letters.toLowerCase()}${generator.includeUppercase ? letters.toUpperCase() : ''}${
-          generator.includeSymbols ? symbols : ''
-        }`,
-      },
+      payload: generator,
     });
   }, [generator]);
 
   const toggleUppercase = useCallback(() => {
     dispatch({
       type: GeneratorActions.TOGGLE_UPPERCASE,
-      payload: {
-        ...generator,
-        seed: `${digits}${generator.includeLowercase ? letters.toLowerCase() : ''}${letters.toUpperCase()}${
-          generator.includeSymbols ? symbols : ''
-        }`,
-      },
+      payload: generator,
     });
   }, [generator]);
 
   const toggleSymbols = useCallback(() => {
     dispatch({
       type: GeneratorActions.TOGGLE_SYMBOLS,
-      payload: {
-        ...generator,
-        seed: `${digits}${generator.includeLowercase ? letters.toLowerCase() : ''}${
-          generator.includeUppercase ? letters.toUpperCase() : ''
-        }${symbols}`,
-      },
+      payload: generator,
     });
   }, [generator]);
 
@@ -163,7 +147,6 @@ export const useGeneratorReducer = () => {
   return useMemo(
     () => ({
       password: generator.password,
-      seed: generator.seed,
       charLength: generator.charLength,
       includeUppercase: generator.includeUppercase,
       includeLowercase: generator.includeLowercase,
@@ -177,7 +160,6 @@ export const useGeneratorReducer = () => {
     }),
     [
       generator.password,
-      generator.seed,
       generator.charLength,
       generator.includeUppercase,
       generator.includeLowercase,
